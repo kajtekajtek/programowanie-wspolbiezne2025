@@ -33,7 +33,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-
 def run_server(buffer_file):
     print(f"Server starting...")
     print(f"Buffer file: {buffer_file}")

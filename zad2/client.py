@@ -5,10 +5,10 @@ import time
 import sys
 
 LOCKFILE_NAME          = "server.lock"
-END_MARKER             = "\x1b"  # ESC character
-LOCK_RETRY_INTERVAL    = 2  # seconds
-RESPONSE_POLL_INTERVAL = 0.5  # seconds
-RESPONSE_TIMEOUT       = 60  # seconds
+END_MARKER             = "\x1b"
+LOCK_RETRY_INTERVAL    = 2
+RESPONSE_POLL_INTERVAL = 0.5
+RESPONSE_TIMEOUT       = 60
 ENCODING               = "utf-8"
 
 def main():
