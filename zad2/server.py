@@ -47,11 +47,11 @@ def run_server(buffer_file):
             response_file, message_lines = read_client_message(buffer_file)
             
             if response_file and message_lines is not None:
-                print("\n" + "="*60)
+                print()
                 print(f"Message received from client (response file: {response_file})")
-                print("="*60)
+                print()
                 print('\n'.join(message_lines))
-                print("="*60)
+                print()
                 
                 response = get_server_response()
                 
@@ -98,9 +98,9 @@ def read_client_message(buffer_file):
 
 
 def get_server_response():
-    print("\n" + "="*60)
+    print()
     print("Enter your response (press Ctrl+D or Ctrl+Z when done):")
-    print("="*60)
+    print()
     
     lines = []
     try:

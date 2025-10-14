@@ -52,11 +52,11 @@ def run_client(buffer_file, response_file):
     response = wait_for_response(response_file)
     
     if response:
-        print("\n" + "="*60)
+        print()
         print("Server response:")
-        print("="*60)
+        print()
         print(response)
-        print("="*60)
+        print()
     else:
         print("Failed to receive response from server", file=sys.stderr)
         sys.exit(1)
@@ -79,7 +79,7 @@ def wait_for_lock():
     while not acquire_lock():
         print("Server busy, please wait...")
         time.sleep(LOCK_RETRY_INTERVAL)
-    print("Lock acquired. Sending message to server...")
+    print("\nLock acquired. Sending message to server...")
 
 def acquire_lock():
     try:
