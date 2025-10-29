@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<body lang="pl-PL" dir="ltr"><p><strong>Zadanie 4.</strong>&nbsp;</p>
+<p><strong>1.</strong>&nbsp;<strong>(8 punktów).</strong>&nbsp;Wykorzystując
+mechanizm kolejek FIFO, napisać program serwera prostej
+wielodostępnej "bazy danych" oraz program klienta tej
+usługi.</p>
+<p>Baza danych zawierająca struktury postaci&nbsp;(ID,nazwisko)&nbsp;gdzie
+identyfikator&nbsp;ID&nbsp;to&nbsp;int&nbsp;a&nbsp;nazwisko&nbsp;to
+napis (można przyjąć ograniczenie długości napisu do 20 znaków,
+wystarczy kilka zapisów w testowej "bazie danych")</p>
+<p>Baza danych jest tworzona i wypełniana statycznie przez program
+serwera (np. lista). Serwer i klienci komunikują się za
+pomocą&nbsp;<strong>kolejek FIFO</strong>. Serwer odbiera ze swojej
+kolejki wejściowej (<strong>wspólnej dla wszystkich klientów</strong>)
+zapytanie zawierające&nbsp;ID&nbsp;i ścieżkę do kolejki klienta
+(<strong>każdy klient ma swoją kolejkę</strong>), do której ma
+wstawić odpowiedź. Serwer odsyła do kolejki klienta nazwisko
+odpowiadające przysłanemu&nbsp; identyfikatorowi lub komunikat "Nie
+ma", jeżeli nie ma w bazie takiego&nbsp;ID. (<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/pwRys4.21.pdf" target="_blank">Szkic
+komunikacji</a>)</p>
+<p>Serwer działa w pętli nieskończonej, klient tylko jednorazowo
+(pytanie - odpowiedź).</p>
+<p><strong>2 . (2 punkty).&nbsp;</strong>Dodatkowo, zapewnić w
+programie serwera&nbsp;<strong>przechwytywanie sygnałów</strong>&nbsp;SIGHUP&nbsp;oraz&nbsp;
+SIGTERM i ignorowanie ich (teoretycznie, powinno to umożliwić
+działanie serwera nawet po zamknięciu okna, w którym go
+uruchomiono).&nbsp; Natomiast sygnał SIGUSR1 wysłany do serwera
+powinien kończyć jego działanie.</p>
+<p><strong>UWAGA 1.&nbsp;</strong>zapewnić niepodzielność
+wysyłania komunikatów (czyli użyć pojedynczego wywołania funkcji
+os.write()&nbsp;do wysłania całego komunikatu).</p>
+<p>Mogą to być komunikaty o stałej długości, ale wtedy trzeba
+rozpoznawać koniec komunikatu krótszego niż o maksymalnej
+długości.</p>
+<p>Można też w treści komunikatu umieścić informacje o jego
+długości. Przykładowa struktura komunikatu od klienta do serwera
+może wtedy wyglądać tak:</p>
+<pre style="margin-bottom: 0.5cm">   ----------------------------------------------------------------------
+   |       int        |       int       |    napis (zmienna długość)     |
+   -----------------------------------------------------------------------
+    długość pozostałej         ID            ścieżka do kolejki klienta              
+    części komunikatu                              
+
+  </pre><p>
+Przykładowa struktura komunikatu od serwera do klienta:</p>
+<pre style="margin-bottom: 0.5cm">   
+   ------------------------------------------------------
+   |       int        |     napis (zmienna długość)     |
+   ------------------------------------------------------
+    długość pozostałej              odpowiedź
+    części komunikatu</pre><p>
+<strong>UWAGA 2.</strong>&nbsp;Testowanie powinno sprawdzić
+działanie programu również wtedy, gdy w kolejce serwera będzie
+więcej niż jedno zapytanie - w tym celu trzeba wprowadzić
+spowolnienie działania serwera przed udzieleniem odpowiedzi, żeby
+zdążyć wysłać dodatkowe zapytania od jeszcze dwóch klientów</p>
+<p><strong>UWAGA 3</strong>. Ponieważ używamy kolejek FIFO z
+blokującym odczytem w przypadku pustej kolejki, nieoptymalną
+praktyką jest stosowanie aktywnego czekania na pojawienie się
+czegoś w kolejce (przez sprawdzanie w pętli czy jest niepusta)</p>
+<p><strong>UWAGA 4.</strong>&nbsp;Należy również przetestować
+obsługę sygnałów</p>
+<p><strong>Wskazówki</strong>&nbsp;-&nbsp;materiały z wykładu:</p>
+<ul>
+	<li><p style="margin-bottom: 0cm"><a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/wspolb5p.pdf" target="_blank">Potoki
+	(kolejki FIFO)</a>. Przykłady:&nbsp;&nbsp;&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/fifoS1.py" target="_blank">fifoS1.py&nbsp;</a>,&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/fifoK1.py" target="_blank">fifoK1.py</a>
+		</p></li>
+	<li><p><a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/wspolbSygnPnotatki21p.pdf">Obsługa
+	sygnałów</a>&nbsp;.&nbsp;Przykład:&nbsp;&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/petlaS1.py" target="_blank">petlaS1.py</a>&nbsp;
+		</p></li>
+</ul>
+<p><br>
+<br>
+
+</p>
+<p><br>
+<br>
+
+</p>
+
+</body></html>
