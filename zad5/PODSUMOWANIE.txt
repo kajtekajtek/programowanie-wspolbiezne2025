@@ -1,0 +1,134 @@
+================================================================================
+                    ZADANIE 5 - KOLEJKI KOMUNIKATÓW IPC
+                         PODSUMOWANIE IMPLEMENTACJI
+================================================================================
+
+WYKONANE ZADANIE:
+-----------------
+✓ Zaimplementowano serwer poradnika geograficznego z kolejkami IPC (8 pkt)
+✓ Zaimplementowano mechanizm zatrzymania serwera z czyszczeniem kolejek (2 pkt)
+✓ Utworzono kompletną dokumentację i skrypty testowe
+
+UTWORZONE PLIKI:
+----------------
+1. serwer.py (4.1K)
+   - Tworzy dwie kolejki IPC (wejściową i wyjściową)
+   - Obsługuje zapytania o stolice 15 krajów
+   - Opóźnienie 2 sekundy przed odpowiedzią
+   - Obsługa sygnałów SIGINT i SIGTERM
+   - Obsługa polecenia "stop"
+   - Automatyczne czyszczenie kolejek przy zamykaniu
+
+2. klient.py (2.4K)
+   - Wysyła 15 zapytań w odstępach 1 sekundy
+   - Używa PID jako typu komunikatu
+   - Odbiera wszystkie odpowiedzi
+   - Umożliwia testowanie obciążenia serwera
+
+3. stop_serwer.py (996B)
+   - Specjalny klient wysyłający polecenie "stop"
+   - Powoduje prawidłowe zamknięcie serwera
+
+4. test.sh (371B)
+   - Skrypt testowy uruchamiający 2 klientów równocześnie
+   - Demonstruje poprawne działanie z wieloma klientami
+
+5. demo.sh (2.7K)
+   - Interaktywny skrypt demonstracyjny
+   - Sprawdza wymagania systemowe
+   - Pokazuje instrukcje użycia
+
+6. requirements.txt (17B)
+   - Zależności Python (sysv_ipc)
+
+7. README.md (3.3K)
+   - Pełna dokumentacja projektu
+   - Instrukcje instalacji i uruchomienia
+   - Opis architektury
+
+8. INSTRUKCJA.md (5.0K)
+   - Szczegółowa instrukcja testowania
+   - Scenariusze testowe
+   - Rozwiązywanie problemów
+
+KLUCZOWE CECHY IMPLEMENTACJI:
+------------------------------
+1. Dwie kolejki IPC z ustalonymi kluczami:
+   - Kolejka wejściowa: klucz 1234
+   - Kolejka wyjściowa: klucz 5678
+
+2. PID klienta jako typ komunikatu:
+   - Pozwala wielu klientom używać wspólnych kolejek
+   - Każdy klient odbiera tylko swoje odpowiedzi
+
+3. Baza danych 15 krajów i stolic:
+   - Polska, Niemcy, Francja, Wielka Brytania, Hiszpania
+   - Włochy, Portugalia, Czechy, Austria, Węgry
+   - Grecja, Norwegia, Szwecja, Dania, Finlandia
+
+4. Test obciążeniowy:
+   - Klient wysyła 15 zapytań z opóźnieniem 1s
+   - Serwer odpowiada z opóźnieniem 2s
+   - Powoduje gromadzenie się zapytań w kolejce
+
+5. Trzy sposoby zatrzymania serwera:
+   - Polecenie "stop" (stop_serwer.py)
+   - Sygnał SIGINT (Ctrl+C)
+   - Sygnał SIGTERM (pkill)
+
+WYMAGANIA SYSTEMOWE:
+--------------------
+- Python 3.x
+- Moduł sysv_ipc (pip install sysv_ipc)
+- System operacyjny z obsługą System V IPC
+
+SZYBKI START:
+-------------
+1. Zainstaluj zależności:
+   $ pip install sysv_ipc
+
+2. Terminal 1 - uruchom serwer:
+   $ python3 serwer.py
+
+3. Terminal 2 - test z jednym klientem:
+   $ python3 klient.py Polska
+
+4. Terminal 2 - test z dwoma klientami:
+   $ bash test.sh
+
+5. Terminal 3 - zatrzymaj serwer:
+   $ python3 stop_serwer.py
+
+WERYFIKACJA POPRAWNOŚCI:
+------------------------
+✓ Klient wysyła 15 zapytań
+✓ Klient odbiera 15 odpowiedzi
+✓ Przy dwóch klientach odpowiedzi trafiają do właściwych odbiorców
+✓ Serwer usuwa kolejki przy zamykaniu
+✓ Brak błędów lintera w kodzie Python
+✓ Wszystkie skrypty mają uprawnienia wykonywania
+
+ZGODNOŚĆ Z WYMAGANIAMI ZADANIA:
+--------------------------------
+[✓] Dwie kolejki IPC (wejściowa i wyjściowa)
+[✓] PID klienta jako typ komunikatu
+[✓] Funkcja poradnika geograficznego (kraje → stolice)
+[✓] Klient wysyła wiele zapytań (15x z opóźnieniem 1s)
+[✓] Serwer z opóźnieniem odpowiedzi (2s)
+[✓] Test z wieloma klientami równocześnie
+[✓] Prawidłowe dostarczanie odpowiedzi do właściwych klientów
+[✓] Zatrzymanie serwera z usunięciem kolejek
+[✓] Obsługa polecenia "stop"
+[✓] Obsługa sygnałów
+
+DODATKOWE MATERIAŁY:
+--------------------
+- README.md - ogólna dokumentacja
+- INSTRUKCJA.md - szczegółowa instrukcja testowania
+- demo.sh - interaktywny przewodnik
+- test.sh - automatyczny test
+
+================================================================================
+                    ZADANIE ZAIMPLEMENTOWANE W 100%
+================================================================================
+

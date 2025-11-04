@@ -1,0 +1,240 @@
+================================================================================
+                    ARCHITEKTURA SYSTEMU IPC
+================================================================================
+
+1. SCHEMAT KOMUNIKACJI
+================================================================================
+
+    ┌─────────────┐              ┌─────────────┐              ┌─────────────┐
+    │  KLIENT 1   │              │   SERWER    │              │  KLIENT 2   │
+    │  PID: 1001  │              │  PID: 9999  │              │  PID: 1002  │
+    └──────┬──────┘              └──────┬──────┘              └──────┬──────┘
+           │                             │                             │
+           │  1. Zapytanie: "Polska"     │     1. Zapytanie: "Niemcy"│
+           │     Typ: 1001               │         Typ: 1002          │
+           ├─────────────────────────────▶                            │
+           │                             │◀───────────────────────────┤
+           │                             │                             │
+           │         KOLEJKA             │         KOLEJKA             │
+           │       WEJŚCIOWA             │       WEJŚCIOWA             │
+           │      (klucz: 1234)          │      (klucz: 1234)          │
+           │                             │                             │
+           │                      ┌──────▼──────┐                      │
+           │                      │   ODBIERA   │                      │
+           │                      │   type=0    │                      │
+           │                      │  (dowolny)  │                      │
+           │                      └──────┬──────┘                      │
+           │                             │                             │
+           │                      ┌──────▼──────┐                      │
+           │                      │ WYSZUKUJE   │                      │
+           │                      │  W BAZIE    │                      │
+           │                      │  STOLIC     │                      │
+           │                      └──────┬──────┘                      │
+           │                             │                             │
+           │                      ┌──────▼──────┐                      │
+           │                      │ CZEKA 2s    │                      │
+           │                      └──────┬──────┘                      │
+           │                             │                             │
+           │     2. Odpowiedź: "Warszawa"│   2. Odpowiedź: "Berlin"   │
+           │        Typ: 1001            │       Typ: 1002             │
+           │◀─────────────────────────────                             │
+           │                             ├────────────────────────────▶│
+           │                             │                             │
+           │         KOLEJKA             │         KOLEJKA             │
+           │       WYJŚCIOWA             │       WYJŚCIOWA             │
+           │      (klucz: 5678)          │      (klucz: 5678)          │
+           │                             │                             │
+    ┌──────▼──────┐              ┌──────┴──────┐              ┌──────▼──────┐
+    │  ODBIERA    │              │   CZEKA     │              │  ODBIERA    │
+    │  type=1001  │              │  NA KOLEJ.  │              │  type=1002  │
+    │  (swój PID) │              │  ZAPYTANIE  │              │  (swój PID) │
+    └─────────────┘              └─────────────┘              └─────────────┘
+
+
+2. SEKWENCJA DZIAŁAŃ
+================================================================================
+
+KLIENT (15 zapytań, odstęp 1s):
+--------------------------------
+t=0s:   Wysyła zapytanie 1  → kolejka wejściowa [typ: PID]
+t=1s:   Wysyła zapytanie 2  → kolejka wejściowa [typ: PID]
+t=2s:   Wysyła zapytanie 3  → kolejka wejściowa [typ: PID]
+...
+t=14s:  Wysyła zapytanie 15 → kolejka wejściowa [typ: PID]
+t=15s:  CZEKA na odpowiedź 1 (blokująco)
+t=17s:  Odbiera odpowiedź 1 ← kolejka wyjściowa [typ: PID]
+t=17s:  CZEKA na odpowiedź 2 (blokująco)
+t=19s:  Odbiera odpowiedź 2 ← kolejka wyjściowa [typ: PID]
+...
+
+SERWER (opóźnienie 2s):
+-----------------------
+t=0s:   Odbiera zapytanie 1 (klient 1)
+t=2s:   Wysyła odpowiedź 1 → kolejka wyjściowa [typ: PID_klient1]
+t=2s:   Odbiera zapytanie 2 (klient 1 lub 2)
+t=4s:   Wysyła odpowiedź 2 → kolejka wyjściowa [typ: PID]
+...
+
+Stan kolejki wejściowej w t=5s (2 klientów):
+[zapytanie 2 klient1, zapytanie 3 klient1, zapytanie 1 klient2, 
+ zapytanie 4 klient1, zapytanie 2 klient2, ...]
+
+
+3. MECHANIZM TYPÓW KOMUNIKATÓW
+================================================================================
+
+TYP KOMUNIKATU = PID KLIENTA
+
+Wysyłanie (klient):
+-------------------
+msgqueue.send(data, type=os.getpid())
+                         ^^^^^^^^^^^
+                         PID klienta
+
+Odbieranie (klient):
+--------------------
+msgqueue.receive(type=os.getpid())
+                      ^^^^^^^^^^^
+                      Odbiera TYLKO komunikaty ze swoim PID
+
+Odbieranie (serwer):
+--------------------
+msgqueue.receive(type=0)
+                      ^
+                      Odbiera komunikaty DOWOLNEGO typu
+
+Wysyłanie (serwer):
+-------------------
+msgqueue.send(data, type=client_pid)
+                         ^^^^^^^^^^
+                         PID klienta z otrzymanego zapytania
+
+
+4. STRUKTURA DANYCH
+================================================================================
+
+KOMUNIKAT ZAPYTANIA:
+-------------------
+Dane:    "Polska" (string zakodowany w UTF-8)
+Typ:     PID klienta (np. 1001)
+Kolejka: Wejściowa (klucz: 1234)
+
+KOMUNIKAT ODPOWIEDZI:
+--------------------
+Dane:    "Warszawa" (string zakodowany w UTF-8)
+Typ:     PID klienta (np. 1001)
+Kolejka: Wyjściowa (klucz: 5678)
+
+BAZA DANYCH SERWERA:
+-------------------
+STOLICE = {
+    "polska": "Warszawa",
+    "niemcy": "Berlin",
+    "francja": "Paryż",
+    ...
+}
+
+
+5. PRZEPŁYW DANYCH - TEST Z DWOMA KLIENTAMI
+================================================================================
+
+Czas   | Akcja
+-------|-----------------------------------------------------------------------
+0s     | START: Klient1 (PID:1001) wysyła "Polska", Klient2 (PID:1002) wysyła "Niemcy"
+       | Kolejka IN: [1001:"Polska"]
+0.1s   | Kolejka IN: [1001:"Polska", 1002:"Niemcy"]
+0.2s   | Serwer odbiera [1001:"Polska"]
+1s     | Klient1 wysyła zapytanie 2
+       | Kolejka IN: [1002:"Niemcy", 1001:"Polska"]
+1.1s   | Klient2 wysyła zapytanie 2
+       | Kolejka IN: [1002:"Niemcy", 1001:"Polska", 1002:"Niemcy"]
+2s     | Klient1 wysyła zapytanie 3
+2.2s   | Serwer kończy przetwarzanie, wysyła [1001:"Warszawa"]
+       | Kolejka OUT: [1001:"Warszawa"]
+       | Serwer odbiera [1002:"Niemcy"]
+2.3s   | Klient2 wysyła zapytanie 3
+3s     | Klient1 wysyła zapytanie 4
+...    | (proces się powtarza)
+15s    | Klient1 zakończył wysyłanie, czeka na odpowiedzi
+       | Klient2 zakończył wysyłanie, czeka na odpowiedzi
+17s    | Klient1 odbiera odpowiedź 1 [1001:"Warszawa"]
+19s    | Klient1 odbiera odpowiedź 2 [1001:"Warszawa"]
+...    | (oba klienty odbierają swoje odpowiedzi)
+
+
+6. OBSŁUGA ZATRZYMANIA SERWERA
+================================================================================
+
+SPOSÓB 1: Polecenie STOP
+-------------------------
+stop_serwer.py → wysyła "stop" → Serwer otrzymuje → cleanup() → exit(0)
+
+SPOSÓB 2: SIGINT (Ctrl+C)
+--------------------------
+Użytkownik: Ctrl+C → OS: SIGINT → signal_handler() → cleanup() → exit(0)
+
+SPOSÓB 3: SIGTERM
+-----------------
+pkill -TERM → OS: SIGTERM → signal_handler() → cleanup() → exit(0)
+
+Funkcja cleanup():
+------------------
+1. Usuwa kolejkę wejściową (MessageQueue.remove())
+2. Usuwa kolejkę wyjściową (MessageQueue.remove())
+3. Wyświetla komunikaty o usunięciu
+
+
+7. WŁASNOŚCI SYSTEMU
+================================================================================
+
+SKALOWALNOŚĆ:
+- Nieograniczona liczba klientów
+- Wszystkie używają tych samych kolejek
+- PID rozróżnia odpowiedzi
+
+NIEZAWODNOŚĆ:
+- Typ komunikatu = PID zapewnia dostarczenie do właściwego odbiorcy
+- Kolejki przetrwają restart klienta (ale nie serwera)
+- Automatyczne czyszczenie przy zamykaniu
+
+BEZPIECZEŃSTWO:
+- Uprawnienia 0666 (rw-rw-rw-)
+- Dostęp dla wszystkich użytkowników systemu
+
+WYDAJNOŚĆ:
+- Komunikacja w pamięci jądra (bardzo szybka)
+- Brak konieczności serializacji przez sieć
+- Opóźnienie tylko w przetwarzaniu (2s)
+
+
+8. TESTOWANIE
+================================================================================
+
+PRZYPADEK 1: Jeden klient
+--------------------------
+✓ Weryfikuje podstawową funkcjonalność
+✓ 15 zapytań → 15 odpowiedzi
+✓ Poprawność odpowiedzi
+
+PRZYPADEK 2: Dwa klienty równocześnie
+--------------------------------------
+✓ Weryfikuje rozróżnianie klientów
+✓ Przeplatanie się zapytań w kolejce
+✓ Poprawne dostarczanie odpowiedzi
+✓ Brak pomyłek między klientami
+
+PRZYPADEK 3: Nieznany kraj
+---------------------------
+✓ Weryfikuje obsługę błędów
+✓ Odpowiedź: "Nie wiem"
+
+PRZYPADEK 4: Zatrzymanie serwera
+---------------------------------
+✓ Weryfikuje czyszczenie zasobów
+✓ Brak kolejek w systemie po zamknięciu
+
+
+================================================================================
+                         KONIEC DOKUMENTACJI
+================================================================================
+

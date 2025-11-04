@@ -1,0 +1,78 @@
+<body lang="pl-PL" dir="ltr"><p><strong>Zadanie 5.</strong>&nbsp;</p>
+<p><strong>1.</strong>&nbsp;<strong>(8 punktów)&nbsp;</strong>Utworzyć
+program serwera udostępniającego dwie&nbsp;<strong>kolejki
+komunikatów IPC</strong>: wejściową i wyjściową, oraz program
+klienta przesyłającego za pomocą kolejki wejściowej serwera
+zapytanie z PID-em swojego procesu jako&nbsp;<strong>typem
+komunikatu</strong>,&nbsp;a następnie odbierającego odpowiedź z&nbsp;
+kolejki wyjściowej serwera. (Obie kolejki wspólne dla serwera i
+wszystkich klientów).&nbsp; &nbsp;</p>
+<p>Serwer realizuje funkcję poradnika geograficznego: otrzymuje
+napis będący nazwa państwa i odsyła w odpowiedzi stolicę tego
+państwa lub komunikat "Nie wiem". Do testowania wystarczy
+kilka państw i stolic.&nbsp;</p>
+<p>Klient w zasadzie powinien działać tak, że wysyła jedno
+zapytanie do serwera, odbiera odpowiedź i kończy działanie, ale
+zmodyfikujmy to działanie klienta, żeby zrobić test nieco bardziej
+obciążający serwer. Chodzi o to, żeby uzyskać taki efekt, że w
+kolejce wejściowej serwera znajdzie się  równocześnie po kilka
+zapytań od różnych klientów i sprawdźmy, że odpowiedzi
+docierają do właściwych odbiorców. W tym celu zróbmy na przykład
+tak, że klient kilkanaście razy wysyła to samo zapytanie w
+odstępach 1 sekundowych a dopiero potem odbiera i wyświetla
+odpowiedzi i uruchomijmy równocześnie dwóch takich
+klientów.&nbsp;Serwer działa w nieskończonej pętli, ale
+wprowadźmy opóźnienie, powiedzmy 2 sekundy, zanim da odpowiedź,
+co pozwoli przetestować sytuację, w której  w kolejkach jest
+więcej niż jedna wiadomość.</p>
+<p><strong>2.</strong>&nbsp;<strong>(2 punkty) </strong>Wymyślić
+sposób na takie zatrzymanie serwera, żeby zanim przestanie działać
+usuwał obie kolejki. W przeciwnym razie, pozostają one w systemie i
+trzeba je ręcznie usuwać. Można w tym celu można napisać
+specjalnego klienta, który wysyła umówione słowo, np. "stop",
+po odebraniu którego serwer się wyłącza. Można tez próbować
+posłużyć się odpowiednio obsługiwanym sygnałem.</p>
+<p>UWAGI&nbsp;</p>
+<ul>
+	<li><p style="margin-bottom: 0cm">w Pythonie trzeba zainstalować
+	moduł z kolejkami komunikatów IPC. Są dwie możliwości 
+	</p>
+	<ul>
+		<li><p style="margin-bottom: 0cm"><a href="https://semanchuk.com/philip/sysv_ipc/" target="_blank">https://semanchuk.com/philip/sysv_ipc/</a>&nbsp;
+		&nbsp;(wersja preferowana, bo będziemy tego pakietu jeszcze
+		używać. Instalacja:&nbsp;pip sysv_ipc) 
+		</p></li>
+		<li><p><a href="https://pypi.org/project/ipcqueue/" target="_blank">https://pypi.org/project/ipcqueue/</a>&nbsp;
+		(wersja System V a nie POSIX) 
+		</p></li>
+	</ul>
+</li></ul>
+<ul>
+	<li><p style="margin-bottom: 0cm">przyjąć, że numery (klucze) obu
+	kolejek serwera są ustalone i znane klientowi. 
+	</p></li>
+	<li><p>ponieważ są osobne kolejki wejściowa i wyjściowa, serwer
+	może odbierać komunikaty dowolnego typu (parametr typ = 0), a
+	odpowiedzi do klientów mogę iść do wspólnej kolejki bo rozróżni
+	je typ będący&nbsp; numerem procesu klienta 
+	</p></li>
+</ul>
+<p>Wskazówkai:</p>
+<ul>
+	<li><p style="margin-bottom: 0cm">materiały z wykładu:&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/wspolb6pNotatki2022p.pdf" target="_blank">Kolejki
+	komunikatów IPC</a>.&nbsp;Przykład:&nbsp;&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/ipcS.py" target="_blank">ipcS.py&nbsp;</a>,&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/ipcK1.py" target="_blank">ipcK1.py</a>,&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/ipcK2.py" target="_blank">ipcK2y</a>,&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb21P/ipcS1.py" target="_blank">ipcS1.py</a>
+		</p></li>
+	<li><p>podobne przykłady w C:&nbsp;&nbsp;<a href="https://inf.ug.edu.pl/~pmp/Z/Wspolb22/kolejkiIPC.html">kolejki
+	IPC - przykłady w C</a> 
+	</p></li>
+</ul>
+<p><br>
+<br>
+
+</p>
+<p><br>
+<br>
+
+</p>
+
+</body></html>
