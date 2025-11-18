@@ -3,12 +3,10 @@ import sysv_ipc
 import time
 import sys
 
-# Configuration
 KEY_BASE = 12345
 NULL_CHAR = '\0'
 NUM_ROUNDS = 3
 
-# Keys for IPC resources
 KEY_MEM1 = KEY_BASE
 KEY_MEM2 = KEY_BASE + 1
 KEY_SEM_P1_WRITE = KEY_BASE + 2
@@ -17,24 +15,18 @@ KEY_SEM_P1_READ = KEY_BASE + 4
 KEY_SEM_P2_READ = KEY_BASE + 5
 
 def main():
-    """Main entry point - determine if Player 1 or Player 2."""
     print("\n" + "=" * 60)
     print("THREE CARD MONTE GAME")
     print("=" * 60)
     print("Starting game...")
     
-    # Try to create semaphore to determine who is Player 1
     try:
-        # Try to create a test semaphore
         test_sem = sysv_ipc.Semaphore(KEY_SEM_P1_WRITE, sysv_ipc.IPC_CREX, 0o700, 0)
-        # If successful, we are Player 1
         is_player1 = True
-        # Remove test semaphore, will be recreated properly in player1_logic
         test_sem.remove()
     except sysv_ipc.ExistentialError:
-        # Semaphore already exists, we are Player 2
         is_player1 = False
-        time.sleep(0.2)  # Give Player 1 time to set up
+        time.sleep(0.2)
     
     if is_player1:
         player1_logic()
@@ -42,40 +34,31 @@ def main():
         player2_logic()
 
 def player1_logic():
-    """Main logic for Player 1."""
     print("=" * 60)
     print("You are PLAYER 1 (Card Placer)")
     print("=" * 60)
     print("Rules: Choose where to place the winning card (1, 2, or 3).")
     print("You win if Player 2 guesses wrong.\n")
     
-    # Create IPC resources
     try:
         mem1 = sysv_ipc.SharedMemory(KEY_MEM1, sysv_ipc.IPC_CREX, size=64)
         mem2 = sysv_ipc.SharedMemory(KEY_MEM2, sysv_ipc.IPC_CREX, size=64)
         
-        # Semaphores:
-        # sem_p1_write: signals Player 1 has written (initial 0)
-        # sem_p2_write: signals Player 2 has written (initial 0)
-        # sem_p1_read: signals Player 1 has read (initial 0)
-        # sem_p2_read: signals Player 2 has read (initial 0)
         sem_p1_write = sysv_ipc.Semaphore(KEY_SEM_P1_WRITE, sysv_ipc.IPC_CREX, 0o700, 0)
         sem_p2_write = sysv_ipc.Semaphore(KEY_SEM_P2_WRITE, sysv_ipc.IPC_CREX, 0o700, 0)
         sem_p1_read = sysv_ipc.Semaphore(KEY_SEM_P1_READ, sysv_ipc.IPC_CREX, 0o700, 0)
         sem_p2_read = sysv_ipc.Semaphore(KEY_SEM_P2_READ, sysv_ipc.IPC_CREX, 0o700, 0)
         
-        # Initialize memory
         write_to_memory(mem1, 0)
         write_to_memory(mem2, 0)
         
         print("[Player 1] IPC resources created. Waiting for Player 2...\n")
-        time.sleep(1)  # Give Player 2 time to connect
+        time.sleep(1)
         
     except Exception as e:
         print(f"[Player 1] Error creating resources: {e}")
         sys.exit(1)
     
-    # Game loop
     score_p1 = 0
     score_p2 = 0
    
@@ -85,24 +68,19 @@ def player1_logic():
             print(f"ROUND {round_num}")
             print(f"{'='*60}")
             
-            # 1. Player 1 chooses and writes to mem1
             p1_choice = get_player_choice(1, round_num)
             write_to_memory(mem1, p1_choice)
             print(f"[Player 1] You placed the winning card at position {p1_choice}")
-            sem_p1_write.release()  # Signal that Player 1 has written
+            sem_p1_write.release()
             
-            # 2. Wait for Player 2 to write
-            sem_p2_write.acquire()  # Wait for Player 2's write
+            sem_p2_write.acquire()
             
-            # 3. Player 1 reads Player 2's choice from mem2
             p2_choice = read_from_memory(mem2)
             print(f"[Player 1] Player 2 guessed position {p2_choice}")
-            sem_p1_read.release()  # Signal that Player 1 has read
+            sem_p1_read.release()
             
-            # 4. Wait for Player 2 to read before displaying results
             sem_p2_read.acquire()
             
-            # 5. Determine winner
             if p1_choice == p2_choice:
                 print(f"\n[Result] Round {round_num}: Player 2 WINS! (Correct guess)")
                 score_p2 += 1
@@ -112,7 +90,6 @@ def player1_logic():
             
             print(f"[Score] Player 1: {score_p1} | Player 2: {score_p2}")
         
-        # Game over
         print("\n" + "=" * 60)
         print("GAME OVER")
         print("=" * 60)
@@ -125,7 +102,6 @@ def player1_logic():
             print("IT'S A TIE!")
         print("=" * 60)
         
-        # Cleanup
         time.sleep(0.5)
         cleanup_resources(mem1, mem2, sem_p1_write, sem_p2_write, sem_p1_read, sem_p2_read)
         
@@ -136,14 +112,12 @@ def player1_logic():
 
 
 def player2_logic():
-    """Main logic for Player 2."""
     print("=" * 60)
     print("You are PLAYER 2 (Guesser)")
     print("=" * 60)
     print("Rules: Guess where the winning card is (1, 2, or 3).")
     print("You win if you guess correctly.\n")
     
-    # Connect to existing IPC resources
     try:
         mem1 = sysv_ipc.SharedMemory(KEY_MEM1)
         mem2 = sysv_ipc.SharedMemory(KEY_MEM2)
@@ -159,7 +133,6 @@ def player2_logic():
         print("[Player 2] Make sure Player 1 is running first!")
         sys.exit(1)
     
-    # Game loop
     score_p1 = 0
     score_p2 = 0
     
@@ -169,24 +142,19 @@ def player2_logic():
             print(f"ROUND {round_num}")
             print(f"{'='*60}")
             
-            # 1. Wait for Player 1 to write first
             sem_p1_write.acquire()
             
-            # 2. Player 2 chooses and writes to mem2
             p2_choice = get_player_choice(2, round_num)
             write_to_memory(mem2, p2_choice)
             print(f"[Player 2] You guessed position {p2_choice}")
-            sem_p2_write.release()  # Signal that Player 2 has written
+            sem_p2_write.release()
             
-            # 3. Wait for Player 1 to read
             sem_p1_read.acquire()
             
-            # 4. Player 2 reads Player 1's choice from mem1
             p1_choice = read_from_memory(mem1)
             print(f"[Player 2] Player 1 placed the card at position {p1_choice}")
-            sem_p2_read.release()  # Signal that Player 2 has read
+            sem_p2_read.release()
             
-            # 5. Determine winner
             if p1_choice == p2_choice:
                 print(f"\n[Result] Round {round_num}: Player 2 WINS! (Correct guess)")
                 score_p2 += 1
@@ -196,7 +164,6 @@ def player2_logic():
             
             print(f"[Score] Player 1: {score_p1} | Player 2: {score_p2}")
         
-        # Game over
         print("\n" + "=" * 60)
         print("GAME OVER")
         print("=" * 60)
@@ -214,13 +181,11 @@ def player2_logic():
         sys.exit(1)
 
 def write_to_memory(mem, value):
-    """Write integer value to shared memory."""
     s = str(value) + NULL_CHAR
     s = s.encode()
     mem.write(s)
 
 def get_player_choice(player_num, round_num):
-    """Get player's choice from keyboard input."""
     while True:
         try:
             choice = input(f"[Player {player_num}] Round {round_num}: Choose position (1, 2, or 3): ")
@@ -236,7 +201,6 @@ def get_player_choice(player_num, round_num):
             sys.exit(1)
 
 def read_from_memory(mem):
-    """Read integer value from shared memory."""
     s = mem.read()
     s = s.decode()
     i = s.find(NULL_CHAR)
@@ -245,7 +209,6 @@ def read_from_memory(mem):
     return int(s) if s else 0
 
 def cleanup_resources(mem1, mem2, sem_p1_write, sem_p2_write, sem_p1_read, sem_p2_read):
-    """Remove all IPC resources."""
     try:
         mem1.remove()
         mem2.remove()

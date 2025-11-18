@@ -77,7 +77,7 @@ def main() -> None:
         response = receive_response(client_fifo)
         
         print("\n" + "=" * 50)
-        print(f"Response from server: {response}")
+        print(f"Response from server to client {os.getpid()}: {response}")
         print("=" * 50)
         
     except Exception as e:
