@@ -144,9 +144,9 @@ def main():
     print(f"Germain primes: {germain_seq}")
     
     if sorted(germain_seq) == sorted(germain_par):
-        print("✓ Results match!")
+        print("Results match!")
     else:
-        print("✗ Error: results don't match!")
+        print("Error: results don't match!")
         print(f"  Sequential: {germain_seq}")
         print(f"  Parallel: {germain_par}")
     
@@ -183,9 +183,9 @@ def main():
         print(f"  Speedup: {speedup:.2f}x")
         
         if sorted(germain_seq) == sorted(germain_par):
-            print(f"  ✓ Correctness: OK")
+            print(f"  Correctness: OK")
         else:
-            print(f"  ✗ Error: results don't match!")
+            print(f"  Error: results don't match!")
     
     print(f"\nAutomatic number of processes ({multiprocessing.cpu_count()}):")
     start = time.time()
