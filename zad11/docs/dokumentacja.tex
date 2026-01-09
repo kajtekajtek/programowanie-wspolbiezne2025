@@ -1,0 +1,395 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric}
+
+\geometry{margin=2.5cm}
+
+% Kolory dla listingów
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single
+}
+\lstset{style=mystyle}
+
+\title{
+    \vspace{-2cm}
+    \textbf{Gra w Statki} \\
+    \large Sieciowa gra dla dwóch graczy \\
+    \vspace{0.5cm}
+    \normalsize Programowanie Współbieżne 2025 -- Zadanie 11
+}
+\author{Kajetan Lach}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Sformułowanie zadania}
+% ============================================================================
+
+\subsection{Opis ogólny}
+
+Celem zadania jest zaimplementowanie sieciowej gry w statki (Battleship) dla dwóch graczy z zachowaniem zasad programowania współbieżnego. Rozwiązanie umożliwia rozgrywkę użytkownikom działającym na osobnych komputerach lub w osobnych procesach na jednej maszynie z wykorzystaniem gniazd sieciowych (sockets).
+
+\subsection{Zasady gry}
+
+\subsubsection{Plansza}
+Gra odbywa się na dwóch kwadratowych planszach o rozmiarze $10 \times 10$ pól. Każdy gracz widzi:
+\begin{itemize}
+    \item \textbf{Własną planszę} -- z rozmieszczonymi statkami
+    \item \textbf{Planszę strzałów} -- widok pola przeciwnika z oznaczonymi trafieniami i pudłami
+\end{itemize}
+
+\subsubsection{Flota}
+Każdy gracz dysponuje następującą flotą:
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Typ statku} & \textbf{Rozmiar (pola)} & \textbf{Ilość} \\
+\hline
+Jednomasztowiec & 1 & 4 \\
+Dwumasztowiec & 2 & 3 \\
+Trzymasztowiec & 3 & 2 \\
+Czteromasztowiec & 4 & 1 \\
+\hline
+\textbf{Razem} & \textbf{20 pól} & \textbf{10 statków} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Rozmieszczenie statków}
+\begin{itemize}
+    \item Statki mogą być ustawione w pionie lub poziomie
+    \item Statki \textbf{nie mogą się stykać} bokami ani rogami
+    \item Pozycje statków są generowane losowo na początku gry
+\end{itemize}
+
+\subsubsection{Przebieg rozgrywki}
+\begin{enumerate}
+    \item \textbf{Start:} Grę rozpoczyna losowo wybrany gracz
+    \item \textbf{Tura:} Gracze wykonują ruchy naprzemiennie
+    \item \textbf{Strzał:} Gracz wybiera pole na planszy strzałów
+    \item \textbf{Wynik strzału:}
+    \begin{itemize}
+        \item \textit{Trafienie} -- gracz kontynuuje turę
+        \item \textit{Pudło} -- tura przechodzi do przeciwnika
+        \item \textit{Zatopienie} -- wszystkie pola statku zostały trafione
+    \end{itemize}
+    \item \textbf{Wygrana:} Wygrywa gracz, który pierwszy zatopi wszystkie statki przeciwnika
+\end{enumerate}
+
+% ============================================================================
+\section{Architektura systemu}
+% ============================================================================
+
+\subsection{Model klient-serwer}
+
+Aplikacja wykorzystuje architekturę klient-serwer:
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=3cm,
+    server/.style={rectangle, draw, fill=blue!20, minimum width=3cm, minimum height=1.5cm, align=center},
+    client/.style={rectangle, draw, fill=green!20, minimum width=2.5cm, minimum height=1.2cm, align=center},
+    arrow/.style={-Stealth, thick}
+]
+    \node[server] (server) {Serwer\\(server.py)};
+    \node[client, left=of server] (client1) {Klient 1\\(client.py)};
+    \node[client, right=of server] (client2) {Klient 2\\(client.py)};
+    
+    \draw[arrow, <->] (client1) -- node[above] {TCP/IP} (server);
+    \draw[arrow, <->] (server) -- node[above] {TCP/IP} (client2);
+\end{tikzpicture}
+\end{center}
+
+\subsection{Komponenty systemu}
+
+\begin{description}
+    \item[server.py] Serwer gry -- zarządza połączeniami, koordynuje rozgrywkę, przechowuje stan gry
+    \item[client.py] Klient z GUI -- interfejs graficzny Tkinter, obsługa interakcji użytkownika
+    \item[protocol.py] Protokół komunikacji -- definicje wiadomości, kodowanie/dekodowanie JSON
+    \item[game\_logic.py] Logika gry -- plansze, statki, zasady, sprawdzanie warunków wygranej
+\end{description}
+
+\subsection{Współbieżność}
+
+System wykorzystuje wielowątkowość do obsługi równoczesnych operacji:
+
+\begin{itemize}
+    \item \textbf{Serwer:} Każdy klient obsługiwany w osobnym wątku
+    \item \textbf{Klient:} Wątek główny (GUI) + wątek odbierania wiadomości
+    \item \textbf{Synchronizacja:} Blokada (lock) chroni dostęp do współdzielonego stanu gry
+\end{itemize}
+
+% ============================================================================
+\section{Schemat komunikacji}
+% ============================================================================
+
+\subsection{Protokół transportowy}
+
+Komunikacja odbywa się przez protokół TCP/IP z wykorzystaniem gniazd (sockets):
+\begin{itemize}
+    \item \textbf{Port domyślny:} 5000
+    \item \textbf{Format danych:} JSON z nagłówkiem długości
+    \item \textbf{Kodowanie:} UTF-8
+\end{itemize}
+
+\subsection{Format wiadomości}
+
+Każda wiadomość składa się z:
+\begin{enumerate}
+    \item \textbf{Nagłówka} (8 bajtów) -- długość danych JSON
+    \item \textbf{Danych} -- obiekt JSON z polami \texttt{type} i \texttt{data}
+\end{enumerate}
+
+\begin{lstlisting}[language=Python, caption=Struktura wiadomości]
+{
+    "type": "shoot",       # Typ wiadomosci
+    "data": {              # Dane zalezne od typu
+        "row": 5,
+        "col": 3
+    }
+}
+\end{lstlisting}
+
+\subsection{Typy wiadomości}
+
+\begin{center}
+\begin{tabular}{|l|c|p{7cm}|}
+\hline
+\textbf{Typ} & \textbf{Kierunek} & \textbf{Opis} \\
+\hline
+\texttt{CONNECTED} & S $\rightarrow$ K & Potwierdzenie połączenia z ID gracza i planszą \\
+\texttt{GAME\_START} & S $\rightarrow$ K & Rozpoczęcie gry, informacja o turze \\
+\texttt{SHOOT} & K $\rightarrow$ S & Strzał gracza (row, col) \\
+\texttt{SHOT\_RESULT} & S $\rightarrow$ K & Wynik własnego strzału \\
+\texttt{OPPONENT\_SHOT} & S $\rightarrow$ K & Informacja o strzale przeciwnika \\
+\texttt{GAME\_OVER} & S $\rightarrow$ K & Koniec gry z wynikiem \\
+\texttt{PLAY\_AGAIN} & K $\rightarrow$ S & Żądanie rematchu \\
+\texttt{DISCONNECT} & K $\leftrightarrow$ S & Rozłączenie \\
+\texttt{OPPONENT\_DISCONNECTED} & S $\rightarrow$ K & Przeciwnik opuścił grę \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Legenda: S -- Serwer, K -- Klient}
+
+\subsection{Diagram sekwencji -- rozgrywka}
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.9,
+    transform shape,
+    participant/.style={rectangle, draw, fill=gray!20, minimum width=2cm, minimum height=0.7cm},
+    message/.style={-Stealth, thick},
+    note/.style={rectangle, draw, dashed, fill=yellow!20, align=left, font=\footnotesize}
+]
+    % Uczestnicy
+    \node[participant] (c1) at (0,0) {Klient 1};
+    \node[participant] (s) at (5,0) {Serwer};
+    \node[participant] (c2) at (10,0) {Klient 2};
+    
+    % Linie życia
+    \draw[dashed] (0,-0.5) -- (0,-12);
+    \draw[dashed] (5,-0.5) -- (5,-12);
+    \draw[dashed] (10,-0.5) -- (10,-12);
+    
+    % Wiadomości
+    \draw[message] (0,-1) -- node[above, font=\scriptsize] {CONNECT} (5,-1);
+    \draw[message] (5,-1.5) -- node[above, font=\scriptsize] {CONNECTED} (0,-1.5);
+    
+    \draw[message] (10,-2) -- node[above, font=\scriptsize] {CONNECT} (5,-2);
+    \draw[message] (5,-2.5) -- node[above, font=\scriptsize] {CONNECTED} (10,-2.5);
+    
+    \draw[message] (5,-3.5) -- node[above, font=\scriptsize] {GAME\_START} (0,-3.5);
+    \draw[message] (5,-4) -- node[above, font=\scriptsize] {GAME\_START} (10,-4);
+    
+    \node[note] at (7,-5) {Gracz 1 zaczyna};
+    
+    \draw[message] (0,-6) -- node[above, font=\scriptsize] {SHOOT(3,5)} (5,-6);
+    \draw[message] (5,-6.5) -- node[above, font=\scriptsize] {SHOT\_RESULT(hit)} (0,-6.5);
+    \draw[message] (5,-7) -- node[above, font=\scriptsize] {OPPONENT\_SHOT} (10,-7);
+    
+    \node[note] at (7,-8) {Trafienie -- Gracz 1 kontynuuje};
+    
+    \draw[message] (0,-9) -- node[above, font=\scriptsize] {SHOOT(4,5)} (5,-9);
+    \draw[message] (5,-9.5) -- node[above, font=\scriptsize] {SHOT\_RESULT(miss)} (0,-9.5);
+    \draw[message] (5,-10) -- node[above, font=\scriptsize] {OPPONENT\_SHOT} (10,-10);
+    
+    \node[note] at (7,-11) {Pudło -- tura przechodzi};
+    
+\end{tikzpicture}
+\end{center}
+
+% ============================================================================
+\section{Instrukcja użytkowania}
+% ============================================================================
+
+\subsection{Wymagania systemowe}
+
+\begin{itemize}
+    \item Python 3.8 lub nowszy
+    \item Biblioteka Tkinter (standardowo wbudowana w Python)
+    \item Dostęp do sieci (dla gry między komputerami)
+\end{itemize}
+
+\subsection{Uruchomienie serwera}
+
+\begin{lstlisting}[language=bash, caption=Uruchomienie serwera]
+cd zad11
+python server.py
+\end{lstlisting}
+
+Opcjonalne parametry:
+\begin{itemize}
+    \item \texttt{-H / --host} -- adres nasłuchiwania (domyślnie: 0.0.0.0)
+    \item \texttt{-p / --port} -- port (domyślnie: 5000)
+\end{itemize}
+
+Przykład z niestandardowym portem:
+\begin{lstlisting}[language=bash]
+python server.py -H 192.168.1.100 -p 8080
+\end{lstlisting}
+
+\subsection{Uruchomienie klienta}
+
+\begin{lstlisting}[language=bash, caption=Uruchomienie klienta]
+python client.py
+\end{lstlisting}
+
+W oknie aplikacji:
+\begin{enumerate}
+    \item Wpisz adres serwera (np. \texttt{localhost} lub IP serwera)
+    \item Wpisz port (np. \texttt{5000})
+    \item Kliknij przycisk \textbf{Połącz}
+    \item Poczekaj na drugiego gracza
+    \item Gdy gra się rozpocznie, klikaj na pola planszy strzałów
+\end{enumerate}
+
+\subsection{Interfejs graficzny}
+
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+\textbf{Element} & \textbf{Opis} \\
+\hline
+Lewa plansza & Twoja flota (widoczne statki) \\
+Prawa plansza & Plansza strzałów (pole przeciwnika) \\
+Wskaźnik tury & Informuje czyja jest tura \\
+Pasek statusu & Komunikaty o strzałach i zdarzeniach \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Legenda kolorów}
+
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+\textbf{Kolor} & \textbf{Znaczenie} \\
+\hline
+Niebieski & Woda (nieodkryte pole) \\
+Stalowy & Statek (widoczny tylko na własnej planszy) \\
+Czerwony & Trafienie \\
+Szary & Pudło \\
+Fioletowy & Zatopiony statek \\
+\hline
+\end{tabular}
+\end{center}
+
+% ============================================================================
+\section{Obsługa sytuacji błędnych}
+% ============================================================================
+
+\subsection{Błędy połączenia}
+
+\begin{tabular}{|p{5cm}|p{8cm}|}
+\hline
+\textbf{Sytuacja} & \textbf{Reakcja systemu} \\
+\hline
+Serwer niedostępny & Komunikat: \textit{„Nie można połączyć z serwerem"} \\
+\hline
+Timeout połączenia & Komunikat po 5 sekundach oczekiwania \\
+\hline
+Gra pełna (2 graczy) & Komunikat: \textit{„Gra jest pełna"} \\
+\hline
+\end{tabular}
+
+\subsection{Błędy w trakcie gry}
+
+\begin{tabular}{|p{5cm}|p{8cm}|}
+\hline
+\textbf{Sytuacja} & \textbf{Reakcja systemu} \\
+\hline
+Strzał w zajęte pole & Komunikat: \textit{„To pole było już ostrzeliwane"} \\
+\hline
+Strzał nie w swojej turze & Blokada interakcji z planszą strzałów \\
+\hline
+Rozłączenie przeciwnika & Komunikat + oczekiwanie na nowego gracza \\
+\hline
+Utrata połączenia z serwerem & Automatyczne rozłączenie + komunikat \\
+\hline
+\end{tabular}
+
+\subsection{Zamknięcie aplikacji}
+
+\begin{itemize}
+    \item Zamknięcie okna klienta powoduje bezpieczne rozłączenie z serwerem
+    \item Serwer informuje pozostałego gracza o rozłączeniu przeciwnika
+    \item Serwer można zatrzymać przez Ctrl+C (sygnał SIGINT)
+\end{itemize}
+
+% ============================================================================
+\section{Testowanie}
+% ============================================================================
+
+Projekt zawiera automatyczne testy weryfikujące poprawność implementacji:
+
+\begin{lstlisting}[language=bash, caption=Uruchomienie testów]
+python test_game.py
+\end{lstlisting}
+
+Testy sprawdzają:
+\begin{itemize}
+    \item Generowanie planszy i rozmieszczanie statków
+    \item Protokół komunikacji (serializacja/deserializacja)
+    \item Połączenie z serwerem i wymianę wiadomości
+    \item Prawidłowość zmiany tur
+\end{itemize}
+
+\end{document}
