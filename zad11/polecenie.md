@@ -1,29 +1,57 @@
 # Zadanie 11
 
-## Opis zadania
+## Opis ogólny
 
-Warianty zadania będą indywidualnie rozsyłane, inny wariant dla każdej osoby (na adres jaki jest w portalu edukacyjnym).
+Celem zadania jest zaimplementowanie gry sieciowej dla dwóch osób przy zachowaniu zasad programowania współbieżnego. Rozwiązanie musi umożliwiać rozgrywkę użytkownikom działającym na osobnych komputerach (lub w osobnych procesach na jednej maszynie z wykorzystaniem gniazd).
 
-- Punktacja: 30 punktów. 
-- Czas: do końca semestru 
-- (Próg zaliczenia laboratorium jest na podstawie sumarycznej ilości punktów za wszystkie zadania, czyli zadanie 11 nie jest bardziej obowiązkowe niż inne zadania.) Przykład zadania https://inf.ug.edu.pl/~pmp/Z/Wspolb22/projektP23.pdf ale każda osoba dostanie swój wariant.
+## 1. Zasady Gry (Specyfikacja Wariantu)
 
-### Interfejs
+Gra polega na rywalizacji dwóch graczy na kwadratowych planszach o rozmiarze .
 
-Jak widać, zadanie obejmuje między innymi interfejs graficzny. Można zastąpić interfejs graficzny uproszczonym interfejsem tekstowym, a nawet zamiast pracochłonnej planszy graficznej przesyłać graczom tylko informacje tekstowe umożliwiające np. ręczne rysowanie stanu gry na kartce. Takie uproszczenia spowoduje jednak zmniejszenie punktacji z tej części zadania.
+### Przygotowanie planszy
 
-### Komunikacja
+- **Widok:** Każdy gracz widzi dwie plansze: swoją (z własnymi statkami) oraz planszę strzałów (widok pola przeciwnika).
+- **Rozmieszczenie statków:** Statki można ustawiać w pionie lub poziomie. Nie mogą się one stykać bokami ani rogami.
+- **Flota:** Każdy gracz dysponuje następującymi jednostkami:
 
-Podstawową sprawą jest zorganizowanie komunikacji. Powinna ona umożliwiać toczenie gry przez użytkowników działających na osobnych komputerach. To sugeruje komunikację za pomocą gniazd. Może być serwer gry i klienci-gracze obsługiwani przez niego, lub prościej, bezpośrednia komunikacja między graczami. Można przyjąć, że testujemy wszystko lokalnie (localhost), czyli wszystko jednak na jednej maszynie ale z wizją na uogólnienie do komunikacji przez sieć. Rozwiązania używające komunikacji ograniczonej do jednej maszyny (kolejki itp.) będą mniej punktowane. Można używać języków i bibliotek ułatwiających rozwiązanie, zwłaszcza stronę graficzną. Komunikacja powinna być jednak zorganizowana samodzielnie a nie przez użycie jakiegoś gotowego frameworka.
+    - 4 x jednomasztowiec 
+    - 3 x dwumasztowiec 
+    - 2 x trzymasztowiec 
+    - 1 x czteromasztowiec 
 
-## Punktacja
+- **Ustawianie:** Generowanie losowych pozycji statków.
 
-- interfejs graficzny [25%], 
-- prawidłowa koordynacja procesów/wątków [50%], 
-- Poprawnie zaimplementowany przebieg gry (przestrzeganie wymagań gry) [25%] 
+### Przebieg rozgrywki
 
-## Dokumentacja (w pliku pdf)
+- **Start:** Grę rozpoczyna losowo wybrany gracz, otrzymując stosowny komunikat.
+- **Tura:** Gdy jeden gracz wykonuje ruch, drugi musi mieć zablokowaną możliwość wykonywania jakichkolwiek akcji.
+- **Strzał:** Oddawany poprzez kliknięcie pola na planszy strzałów.
+- **Aktualizacja:** Po strzale stan planszy musi zaktualizować się natychmiast u obu graczy (informacja o trafieniu/pudle).
+- **Wygrana:** Wygrywa osoba, która jako pierwsza zatopi wszystkie statki przeciwnika. Gra kończy się komunikatem o wyniku i opcją ponownej rozgrywki.
 
-- imię i nazwisko autora/autorki i sformułowanie zadania (czyli to co w opisie przydzielonego wariantu) 
-- krótkie wyjaśnienie schematu komunikacji, jaka jest zawartość przesyłanych komunikatów 
-- krótki opis użytkowania programu (w tym wykaz ewentualnych sytuacji błędnych obsługiwanych przez program); 
+## 2. Wymagania Techniczne i Komunikacja
+
+Podstawą zadania jest samodzielna organizacja komunikacji sieciowej.
+
+* **Mechanizm komunikacji:** Należy wykorzystać **gniazda (sockets)**.
+* **Architektura:** Model serwer-klient.
+* **Ograniczenia:** Nie wolno używać gotowych frameworków komunikacyjnych. Komunikacja powinna być zorganizowana samodzielnie.
+* **Sieć:** Program powinien być gotowy do działania w sieci, choć testowanie może odbywać się lokalnie (localhost). Rozwiązania ograniczające się wyłącznie do mechanizmów wewnątrzmaszynowych (np. kolejki komunikatów systemu operacyjnego) będą oceniane niżej.
+
+## 3. Kryteria Oceny
+
+| Kryterium | Waga | Opis |
+| --- | --- | --- |
+| **Interfejs Graficzny (GUI)** | **25%** | Przejrzysta wizualizacja stanu gry. Można użyć uproszczonego interfejsu tekstowego, ale obniża to punktację w tej kategorii. |
+| **Koordynacja procesów/wątków** | **50%** | Prawidłowa synchronizacja działań graczy, obsługa komunikacji sieciowej w tle, brak blokowania interfejsu. |
+| **Logika i przebieg gry** | **25%** | Poprawna implementacja algorytmu gry, sprawdzanie warunków trafienia, zatopienia i końca gry. |
+
+---
+
+## 4. Dokumentacja (Plik PDF)
+
+Do zadania należy dołączyć dokumentację zawierającą:
+
+* Imię i nazwisko autora oraz pełne sformułowanie zadania (opis wariantu "Statki").
+* Krótkie wyjaśnienie **schematu komunikacji** oraz struktury przesyłanych komunikatów (co zawierają pakiety danych).
+* Krótki opis użytkowania programu wraz z wykazem obsługiwanych sytuacji błędnych.
